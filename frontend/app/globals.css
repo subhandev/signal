@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@300;400&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-base:           #0A0A0B;
+  --bg-surface:        #111113;
+  --bg-elevated:       #18181B;
+  --text-primary:      #F4F4F5;
+  --text-secondary:    #A1A1AA;
+  --text-tertiary:     #52525B;
+  --accent-green:      #00FF85;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-family: var(--font-body);
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+body { min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+a { color: inherit; text-decoration: none; }
