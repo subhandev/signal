@@ -47,3 +47,21 @@ export interface StreamUpdate {
   event: SSEEvent;
   timestamp: Date;
 }
+
+export interface GalleryItem {
+  job_id: string;
+  query: string;
+  mode: string;
+  confidence_level: string | null;
+  executive_summary: string | null;
+  first_finding: string | null;
+  source_count: number;
+  created_at: string;
+}
+
+export interface SiteStats {
+  total_reports: number;
+  sources_read: number;
+  avg_searches: number;
+  success_rate: number;
+}
