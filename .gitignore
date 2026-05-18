@@ -21,3 +21,5 @@ out/
 # Local env
 backend/.env
 frontend/.env.local
+
+.vercel
