@@ -44,3 +44,17 @@ class ResearchJobResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class GalleryItem(BaseModel):
+    job_id: str
+    query: str
+    mode: str
+    confidence_level: Optional[str] = None
+    executive_summary: Optional[str] = None
+    first_finding: Optional[str] = None
+    source_count: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
