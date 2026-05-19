@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ResearchMode } from '@/types';
 import { startResearch } from '@/lib/api';
+import { getSuggestedPrompts } from '@/lib/suggestedPrompts';
 
 interface Props {
   onStart: (jobId: string) => void;
@@ -14,22 +15,27 @@ const MODES: { value: ResearchMode; label: string; desc: string }[] = [
   { value: 'deep',     label: 'Deep',     desc: '~2min · Exhaustive' },
 ];
 
-const EXAMPLES = ['OpenAI', 'Anthropic', 'Tesla Q1 2025', 'Climate tech'];
-
 export default function ResearchForm({ onStart }: Props) {
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<ResearchMode>('standard');
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [suggestions, setSuggestions] = useState(() => getSuggestedPrompts());
+
+  const refreshSuggestions = () => setSuggestions(getSuggestedPrompts());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || loading) return;
     setLoading(true);
+    setSubmitError(null);
     try {
       const job = await startResearch(query.trim(), mode);
       onStart(job.job_id);
     } catch (err) {
       console.error(err);
+      setSubmitError(err instanceof Error ? err.message : 'Failed to start research');
       setLoading(false);
     }
   };
@@ -63,36 +69,39 @@ export default function ResearchForm({ onStart }: Props) {
             </button>
           ))}
         </div>
-        <p style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '10px',
-          color: 'var(--text-tertiary)',
-        }}>
-          {selectedMode.desc}
-        </p>
+        <p className="sig-mode-desc">{selectedMode.desc}</p>
       </div>
 
       {/* Example chips */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <span style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '11px',
-          color: 'var(--text-tertiary)',
-          flexShrink: 0,
-        }}>
-          Try:
-        </span>
-        {EXAMPLES.map((q) => (
+        <span className="sig-form-hint">Try:</span>
+        <button
+          type="button"
+          className="sig-chip"
+          onClick={refreshSuggestions}
+          disabled={loading}
+          title="Show different suggestions"
+          aria-label="Refresh suggestions"
+        >
+          ↻ More ideas
+        </button>
+        {suggestions.map((q, i) => (
           <button
-            key={q}
+            key={`${i}-${q}`}
             type="button"
             className="sig-chip"
+            title={q}
+            disabled={loading}
             onClick={() => setQuery(q)}
           >
             {q}
           </button>
         ))}
       </div>
+
+      {submitError && (
+        <p className="sig-form-error" role="alert">{submitError}</p>
+      )}
 
       {/* Submit */}
       <button

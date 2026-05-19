@@ -6,7 +6,7 @@ SIGNAL is an autonomous research agent that searches the web, scrapes relevant p
 
 ![SIGNAL Demo](./docs/demo.gif)
 
-**Live Demo:** [signal.vercel.app](https://signal.vercel.app)
+**Live Demo:** [signal-research.vercel.app](https://signal-research.vercel.app)
 
 ---
 
@@ -213,10 +213,10 @@ Visit [http://localhost:3000](http://localhost:3000)
 1. Create a Railway service from this repo and set **Root Directory** to `backend`.
 2. In **Settings → Config-as-code**, set the config file path to `/backend/railway.toml` if Railway does not pick it up automatically.
 3. Add the backend environment variables (see above). Use Neon’s `postgresql+asyncpg://…` URL for `DATABASE_URL`.
-4. Set `ALLOWED_ORIGINS` to your Vercel URL (e.g. `https://signal.vercel.app`).
+4. Set `ALLOWED_ORIGINS` to your Vercel URL (e.g. `https://signal-research.vercel.app`).
 5. Redeploy. Start command (from `backend/`): `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
 
-Point the Vercel frontend’s `NEXT_PUBLIC_API_URL` at your Railway service URL.
+Point the Vercel frontend’s `NEXT_PUBLIC_API_URL` at your Railway service URL (e.g. `https://signal-production-1155.up.railway.app`).
 
 ---
 

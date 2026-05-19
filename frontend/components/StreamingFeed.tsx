@@ -1,13 +1,23 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { StreamUpdate } from '@/types';
 
 type CollapsedUpdate = StreamUpdate & { count: number };
 
-function collapseUpdates(updates: StreamUpdate[]): CollapsedUpdate[] {
+const LOG_EVENT_TYPES = new Set([
+  'progress',
+  'search',
+  'scrape',
+  'synthesising',
+  'complete',
+  'error',
+]);
+
+function collapseLogUpdates(updates: StreamUpdate[]): CollapsedUpdate[] {
   const result: CollapsedUpdate[] = [];
   for (const u of updates) {
+    if (!LOG_EVENT_TYPES.has(u.event.type)) continue;
     const last = result[result.length - 1];
     if (last && last.event.type === u.event.type && last.event.message === u.event.message) {
       last.count += 1;
@@ -16,6 +26,13 @@ function collapseUpdates(updates: StreamUpdate[]): CollapsedUpdate[] {
     }
   }
   return result;
+}
+
+function getLatestThinking(updates: StreamUpdate[]): StreamUpdate | undefined {
+  for (let i = updates.length - 1; i >= 0; i--) {
+    if (updates[i].event.type === 'thinking') return updates[i];
+  }
+  return undefined;
 }
 
 const cleanMessage = (msg: string) =>
@@ -37,6 +54,8 @@ const EVENT_CONFIG: Record<string, { icon: string; label: string; color: string 
   error:        { icon: '✕', label: 'ERROR',  color: 'var(--accent-red)' },
 };
 
+const WORKING_COLOR = 'var(--accent-amber)';
+
 function fmtTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
@@ -44,6 +63,122 @@ function fmtTime(date: Date): string {
 function fmtElapsed(ms: number): string {
   const s = Math.floor(ms / 1000);
   return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+
+function RepeatCountBadge({ count, accentColor }: { count: number; accentColor: string }) {
+  if (count <= 1) return null;
+  return (
+    <span
+      className="sig-feed-count"
+      style={{ '--count-accent': accentColor } as CSSProperties}
+      title={`Same step repeated ${count} times`}
+    >
+      ×{count}
+    </span>
+  );
+}
+
+function PulseDots() {
+  return (
+    <span className="sig-feed-pulse" aria-hidden>
+      <span className="sig-feed-pulse-dot sig-feed-pulse-dot--1" />
+      <span className="sig-feed-pulse-dot sig-feed-pulse-dot--2" />
+      <span className="sig-feed-pulse-dot sig-feed-pulse-dot--3" />
+    </span>
+  );
+}
+
+function WorkingStatusRow({ update }: { update: StreamUpdate }) {
+  return (
+    <div className="sig-feed-row sig-feed-working" aria-live="polite">
+      <span
+        className="sig-feed-working-icon"
+        style={{ color: WORKING_COLOR }}
+      >
+        ◈
+      </span>
+      <span className="sig-feed-working-label" style={{ color: WORKING_COLOR }}>
+        Working…
+      </span>
+      <div className="sig-feed-working-message">
+        <p>{cleanMessage(update.event.message ?? '')}</p>
+        <PulseDots />
+      </div>
+      <span className="sig-feed-time sig-feed-working-time">
+        {fmtTime(update.timestamp)}
+      </span>
+    </div>
+  );
+}
+
+function FeedLogRow({ u, rowKey }: { u: CollapsedUpdate; rowKey: string | number }) {
+  const cfg = EVENT_CONFIG[u.event.type] ?? EVENT_CONFIG.progress;
+  return (
+    <div key={rowKey} className="sig-feed-row">
+      <span style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '15px',
+        color: cfg.color,
+        lineHeight: '20px',
+      }}>
+        {cfg.icon}
+      </span>
+
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        lineHeight: '20px',
+        flexWrap: 'wrap',
+      }}>
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '11px',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase' as const,
+          color: cfg.color,
+        }}>
+          {cfg.label}
+        </span>
+        <RepeatCountBadge count={u.count} accentColor={cfg.color} />
+      </div>
+
+      <div style={{ minWidth: 0, display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+        <p style={{
+          fontFamily: 'var(--font-body)',
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+          lineHeight: '20px',
+          margin: 0,
+        }}>
+          {cleanMessage(u.event.message ?? '')}
+        </p>
+        {(u.event.query || u.event.url) && (
+          <p style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            color: 'var(--text-tertiary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            margin: 0,
+          }}>
+            {u.event.query ?? u.event.url}
+          </p>
+        )}
+      </div>
+
+      <span className="sig-feed-time" style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '11px',
+        color: 'var(--text-tertiary)',
+        textAlign: 'right',
+        lineHeight: '20px',
+      }}>
+        {fmtTime(u.timestamp)}
+      </span>
+    </div>
+  );
 }
 
 export default function StreamingFeed({ updates, startedAt, isComplete }: Props) {
@@ -69,9 +204,21 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
       : now - startedAt.getTime()
     : 0;
 
-  const collapsed = collapseUpdates(updates);
-  const visibleUpdates =
-    isComplete && !expanded ? collapsed.slice(-3) : collapsed;
+  const collapsed = collapseLogUpdates(updates);
+  const latestThinking = getLatestThinking(updates);
+  const pastSynthPhase = updates.some(
+    (u) => u.event.type === 'synthesising' || u.event.type === 'complete',
+  );
+  const showWorking = !isComplete && !!latestThinking && !pastSynthPhase;
+
+  const hiddenCount =
+    isComplete && !expanded && collapsed.length > 4
+      ? collapsed.length - 3
+      : 0;
+  const visibleLog =
+    hiddenCount > 0 ? collapsed.slice(-3) : collapsed;
+
+  const hasVisibleContent = visibleLog.length > 0 || showWorking;
 
   return (
     <div>
@@ -90,7 +237,7 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
       </div>
 
       <div className="sig-feed-container">
-        {updates.length === 0 && (
+        {!hasVisibleContent && (
           <div style={{
             padding: '8px 16px',
             fontFamily: 'var(--font-mono)',
@@ -101,92 +248,23 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
           </div>
         )}
 
-        {visibleUpdates.map((u, i) => {
-          const cfg = EVENT_CONFIG[u.event.type] ?? EVENT_CONFIG.progress;
+        {visibleLog.map((u, i) => {
           const key = isComplete && !expanded ? collapsed.length - 3 + i : i;
-          return (
-            <div key={key} className="sig-feed-row">
-              {/* Icon */}
-              <span style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '15px',
-                color: cfg.color,
-                lineHeight: '20px',
-              }}>
-                {cfg.icon}
-              </span>
-
-              {/* Label */}
-              <span style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase' as const,
-                color: cfg.color,
-                lineHeight: '20px',
-              }}>
-                {cfg.label}
-              </span>
-
-              {/* Message */}
-              <div style={{ minWidth: 0, display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                <p style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '13px',
-                  color: 'var(--text-secondary)',
-                  lineHeight: '20px',
-                  margin: 0,
-                }}>
-                  {cleanMessage(u.event.message ?? '')}
-                </p>
-                {u.count > 1 && (
-                  <span style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    color: 'var(--text-tertiary)',
-                    flexShrink: 0,
-                  }}>
-                    ×{u.count}
-                  </span>
-                )}
-                {(u.event.query || u.event.url) && (
-                  <p style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    color: 'var(--text-tertiary)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    marginTop: '2px',
-                    margin: 0,
-                  }}>
-                    {u.event.query ?? u.event.url}
-                  </p>
-                )}
-              </div>
-
-              {/* Time */}
-              <span className="sig-feed-time" style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                color: 'var(--text-tertiary)',
-                textAlign: 'right',
-                lineHeight: '20px',
-              }}>
-                {fmtTime(u.timestamp)}
-              </span>
-            </div>
-          );
+          return <FeedLogRow key={key} u={u} rowKey={key} />;
         })}
+
+        {showWorking && latestThinking && (
+          <WorkingStatusRow update={latestThinking} />
+        )}
 
         <div ref={bottomRef} />
       </div>
 
-      {isComplete && collapsed.length > 3 && (
+      {isComplete && (hiddenCount > 0 || expanded) && collapsed.length > 4 && (
         <button className="sig-feed-toggle" onClick={() => setExpanded(!expanded)}>
           {expanded
-            ? '↑ Collapse Log'
-            : `↓ Show Full Log (${updates.length} events)`}
+            ? '↑ Collapse log'
+            : `↓ Show ${hiddenCount} earlier step${hiddenCount === 1 ? '' : 's'}`}
         </button>
       )}
     </div>
