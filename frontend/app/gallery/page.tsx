@@ -3,9 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Nav from '@/components/Nav';
+import { apiUrl } from '@/lib/api';
 import { GalleryItem } from '@/types';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const CONFIDENCE_CLASS: Record<string, string> = {
   High:   'sig-confidence-badge sig-confidence-high',
@@ -54,7 +53,7 @@ export default function GalleryPage() {
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/gallery?limit=50`, { cache: 'no-store' } as RequestInit)
+    fetch(apiUrl('/api/gallery?limit=50'), { cache: 'no-store' } as RequestInit)
       .then((r) => r.json())
       .then((data) => { setItems(data); setLoading(false); })
       .catch(() => setLoading(false));

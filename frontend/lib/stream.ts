@@ -1,3 +1,4 @@
+import { apiUrl } from '@/lib/api';
 import { SSEEvent, StreamUpdate } from '@/types';
 
 export function createResearchStream(
@@ -6,8 +7,7 @@ export function createResearchStream(
   onComplete: (report: any) => void,
   onError: (error: string) => void,
 ): () => void {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  const eventSource = new EventSource(`${API_BASE}/api/research/${jobId}/stream`);
+  const eventSource = new EventSource(apiUrl(`/api/research/${jobId}/stream`));
 
   eventSource.onmessage = (e) => {
     try {

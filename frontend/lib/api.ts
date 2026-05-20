@@ -1,20 +1,41 @@
 import { GalleryItem, SiteStats } from '@/types';
 
-export const API_BASE =
+/** Backend origin for SSR and Next.js rewrites (no trailing slash). */
+export const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL?.trim() || 'http://localhost:8000';
+
+/** @deprecated Prefer apiUrl() — kept for error messages and external imports. */
+export const API_BASE = BACKEND_URL;
+
+function resolveApiBase(): string {
+  // Browser: same-origin paths proxied by next.config rewrites → avoids CORS / direct Railway issues.
+  if (typeof window !== 'undefined') return '';
+  return BACKEND_URL;
+}
+
+export function apiUrl(path: string): string {
+  const p = path.startsWith('/') ? path : `/${path}`;
+  const base = resolveApiBase();
+  return base ? `${base}${p}` : p;
+}
 
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(input, init);
-  } catch {
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'network error';
+    const hint =
+      typeof window !== 'undefined'
+        ? 'Ensure `npm run dev` is running. In frontend/.env.local set NEXT_PUBLIC_API_URL to http://localhost:8000 (local backend) or your Railway URL.'
+        : 'Set NEXT_PUBLIC_API_URL for server-side fetches.';
     throw new Error(
-      `Cannot reach the API at ${API_BASE}. Start the backend locally (port 8000) or set NEXT_PUBLIC_API_URL in frontend/.env.local.`,
+      `Cannot reach the API (${BACKEND_URL}). ${detail}. ${hint}`,
     );
   }
 }
 
 export async function startResearch(query: string, mode: string) {
-  const res = await apiFetch(`${API_BASE}/api/research`, {
+  const res = await apiFetch(apiUrl('/api/research'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, mode }),
@@ -27,19 +48,21 @@ export async function startResearch(query: string, mode: string) {
 }
 
 export async function getResearchJob(jobId: string) {
-  const res = await apiFetch(`${API_BASE}/api/research/${jobId}`);
+  const res = await apiFetch(apiUrl(`/api/research/${jobId}`));
   if (!res.ok) throw new Error('Job not found');
   return res.json();
 }
 
 export async function listResearchJobs() {
-  const res = await apiFetch(`${API_BASE}/api/research`);
+  const res = await apiFetch(apiUrl('/api/research'));
   if (!res.ok) throw new Error('Failed to fetch history');
   return res.json();
 }
 
 export async function getGallery(limit = 50): Promise<GalleryItem[]> {
-  const res = await apiFetch(`${API_BASE}/api/gallery?limit=${limit}`, { cache: 'no-store' });
+  const res = await apiFetch(apiUrl(`/api/gallery?limit=${limit}`), {
+    cache: 'no-store',
+  });
   if (!res.ok) throw new Error('Failed to fetch gallery');
   return res.json();
 }
@@ -71,7 +94,7 @@ function normalizeStats(raw: Record<string, unknown>): SiteStats {
 }
 
 export async function getStats(): Promise<SiteStats> {
-  const res = await apiFetch(`${API_BASE}/api/stats`, { cache: 'no-store' });
+  const res = await apiFetch(apiUrl('/api/stats'), { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch stats');
   const raw = (await res.json()) as Record<string, unknown>;
   return normalizeStats(raw);
