@@ -36,7 +36,7 @@ function ReportCard({ item }: { item: GalleryItem }) {
 }
 
 export default async function LandingPage() {
-  let stats: SiteStats = { total_reports: 0, sources_read: 0, avg_searches: 0, success_rate: 0 };
+  let stats: SiteStats = { reports_run: 0, sources_read: 0, avg_searches_per_report: 0, success_rate: 0 };
   let featured: GalleryItem[] = [];
 
   try { stats = await getStats(); } catch {}
@@ -93,8 +93,8 @@ export default async function LandingPage() {
       <div className="sig-stats-bar">
         <div className="sig-stats-inner">
           <div className="sig-stat-card">
-            <span className="sig-stat-num" style={{ color: stats.total_reports > 0 ? 'var(--accent-green)' : 'var(--text-tertiary)' }}>
-              {fmtStat(stats.total_reports)}
+            <span className="sig-stat-num" style={{ color: stats.reports_run > 0 ? 'var(--accent-green)' : 'var(--text-tertiary)' }}>
+              {fmtStat(stats.reports_run)}
             </span>
             <span className="sig-stat-label">Reports Run</span>
           </div>
@@ -105,8 +105,8 @@ export default async function LandingPage() {
             <span className="sig-stat-label">Sources Read</span>
           </div>
           <div className="sig-stat-card">
-            <span className="sig-stat-num" style={{ color: stats.avg_searches > 0 ? 'var(--accent-green)' : 'var(--text-tertiary)' }}>
-              {stats.avg_searches > 0 ? stats.avg_searches : '—'}
+            <span className="sig-stat-num" style={{ color: stats.avg_searches_per_report > 0 ? 'var(--accent-green)' : 'var(--text-tertiary)' }}>
+              {stats.avg_searches_per_report > 0 ? stats.avg_searches_per_report : '—'}
             </span>
             <span className="sig-stat-label">Avg Searches per Report</span>
           </div>

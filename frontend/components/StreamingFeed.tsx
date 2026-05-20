@@ -111,10 +111,11 @@ function WorkingStatusRow({ update }: { update: StreamUpdate }) {
   );
 }
 
-function FeedLogRow({ u, rowKey }: { u: CollapsedUpdate; rowKey: string | number }) {
+function FeedLogRow({ u, rowKey, isActive }: { u: CollapsedUpdate; rowKey: string | number; isActive?: boolean }) {
   const cfg = EVENT_CONFIG[u.event.type] ?? EVENT_CONFIG.progress;
+  const rowClass = u.event.type === 'scrape' ? 'sig-feed-row sig-feed-row--scrape' : 'sig-feed-row';
   return (
-    <div key={rowKey} className="sig-feed-row">
+    <div key={rowKey} className={rowClass}>
       <span style={{
         fontFamily: 'var(--font-mono)',
         fontSize: '15px',
@@ -152,6 +153,7 @@ function FeedLogRow({ u, rowKey }: { u: CollapsedUpdate; rowKey: string | number
           margin: 0,
         }}>
           {cleanMessage(u.event.message ?? '')}
+          {isActive && <span className="sig-feed-cursor" aria-hidden>█</span>}
         </p>
         {(u.event.query || u.event.url) && (
           <p style={{
@@ -183,6 +185,8 @@ function FeedLogRow({ u, rowKey }: { u: CollapsedUpdate; rowKey: string | number
 
 export default function StreamingFeed({ updates, startedAt, isComplete }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const userScrolledRef = useRef(false);
   const [now, setNow] = useState(Date.now());
   const [expanded, setExpanded] = useState(false);
 
@@ -193,7 +197,18 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
   }, [isComplete]);
 
   useEffect(() => {
-    if (!isComplete) {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      userScrolledRef.current = distanceFromBottom > 50;
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!isComplete && !userScrolledRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [updates, isComplete]);
@@ -210,6 +225,7 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
     (u) => u.event.type === 'synthesising' || u.event.type === 'complete',
   );
   const showWorking = !isComplete && !!latestThinking && !pastSynthPhase;
+  const showIdleWaiting = !isComplete && !showWorking && collapsed.length > 0;
 
   const hiddenCount =
     isComplete && !expanded && collapsed.length > 4
@@ -218,25 +234,32 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
   const visibleLog =
     hiddenCount > 0 ? collapsed.slice(-3) : collapsed;
 
-  const hasVisibleContent = visibleLog.length > 0 || showWorking;
+  const hasVisibleContent = visibleLog.length > 0 || showWorking || showIdleWaiting;
 
   return (
     <div>
       <div className="sig-feed-header">
         <span className="sig-feed-label">Live Feed</span>
-        {startedAt && (
-          <span style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '11px',
-            color: 'var(--text-tertiary)',
-            letterSpacing: '0.05em',
-          }}>
-            {fmtElapsed(elapsedMs)} elapsed
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {!isComplete && collapsed.length > 0 && (
+            <span className="sig-feed-step-counter">
+              STEP {collapsed.length} / ~8
+            </span>
+          )}
+          {startedAt && (
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: 'var(--text-tertiary)',
+              letterSpacing: '0.05em',
+            }}>
+              {fmtElapsed(elapsedMs)} elapsed
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="sig-feed-container">
+      <div className="sig-feed-container" ref={containerRef}>
         {!hasVisibleContent && (
           <div style={{
             padding: '8px 16px',
@@ -250,8 +273,15 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
 
         {visibleLog.map((u, i) => {
           const key = isComplete && !expanded ? collapsed.length - 3 + i : i;
-          return <FeedLogRow key={key} u={u} rowKey={key} />;
+          const isActive = !isComplete && !showWorking && i === visibleLog.length - 1;
+          return <FeedLogRow key={key} u={u} rowKey={key} isActive={isActive} />;
         })}
+
+        {showIdleWaiting && (
+          <div className="sig-feed-idle-dots">
+            <PulseDots />
+          </div>
+        )}
 
         {showWorking && latestThinking && (
           <WorkingStatusRow update={latestThinking} />

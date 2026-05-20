@@ -74,8 +74,18 @@ textarea { font-family: inherit; }
 }
 
 @keyframes feedIn {
-  from { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sourceIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink-green {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
 }
 
 @keyframes sectionIn {
@@ -460,6 +470,37 @@ textarea { font-family: inherit; }
   text-align: left;
 }
 .sig-feed-toggle:hover { color: var(--text-secondary); }
+
+.sig-feed-cursor {
+  display: inline-block;
+  color: var(--accent-green);
+  animation: blink-green 1s step-end infinite;
+  margin-left: 2px;
+  font-size: 13px;
+  line-height: 1;
+  vertical-align: text-bottom;
+}
+
+.sig-feed-step-counter {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-amber);
+  opacity: 0.8;
+}
+
+.sig-feed-row--scrape {
+  animation: sourceIn 0.15s ease-out;
+}
+
+.sig-feed-idle-dots {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 16px 6px 28px;
+  gap: 0;
+}
 
 /* ─── Export Buttons ─────────────────────────────────────── */
 

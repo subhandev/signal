@@ -60,8 +60,8 @@ export interface GalleryItem {
 }
 
 export interface SiteStats {
-  total_reports: number;
+  reports_run: number;
   sources_read: number;
-  avg_searches: number;
+  avg_searches_per_report: number;
   success_rate: number;
 }

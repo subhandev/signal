@@ -142,11 +142,11 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     failed_count = failed_result.scalar() or 0
 
     total_attempted = success_count + failed_count
-    success_rate = round(success_count / total_attempted * 100) if total_attempted > 0 else 98
+    success_rate = round(success_count / total_attempted * 100) if total_attempted > 0 else 0
 
     return {
-        "total_reports": success_count,
+        "reports_run": success_count,
         "sources_read": success_count * 4,
-        "avg_searches": 3,
-        "success_rate": success_rate if total_attempted > 0 else 98,
+        "avg_searches_per_report": 3.0 if success_count > 0 else 0.0,
+        "success_rate": success_rate,
     }
