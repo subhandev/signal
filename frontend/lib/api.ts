@@ -1,6 +1,7 @@
 import { GalleryItem, SiteStats } from '@/types';
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.trim() || 'http://localhost:8000';
 
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   try {
