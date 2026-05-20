@@ -241,11 +241,6 @@ export default function StreamingFeed({ updates, startedAt, isComplete }: Props)
       <div className="sig-feed-header">
         <span className="sig-feed-label">Live Feed</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {!isComplete && collapsed.length > 0 && (
-            <span className="sig-feed-step-counter">
-              STEP {collapsed.length} / ~8
-            </span>
-          )}
           {startedAt && (
             <span style={{
               fontFamily: 'var(--font-mono)',

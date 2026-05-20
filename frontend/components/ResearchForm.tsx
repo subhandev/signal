@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ResearchMode } from '@/types';
 import { startResearch } from '@/lib/api';
 import { getSuggestedPrompts } from '@/lib/suggestedPrompts';
@@ -21,9 +21,24 @@ export default function ResearchForm({ onStart }: Props) {
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [suggestions, setSuggestions] = useState(() => getSuggestedPrompts());
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  /** Avoid hydration mismatch: random picks differ between server and client; load after mount. */
+  const [fetchingIdeas, setFetchingIdeas] = useState(true);
 
-  const refreshSuggestions = () => setSuggestions(getSuggestedPrompts());
+  useEffect(() => {
+    setSuggestions(getSuggestedPrompts());
+    setFetchingIdeas(false);
+  }, []);
+
+  const refreshSuggestions = () => {
+    setSuggestions([]);
+    setFetchingIdeas(true);
+    const next = getSuggestedPrompts();
+    setTimeout(() => {
+      setSuggestions(next);
+      setFetchingIdeas(false);
+    }, 900);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,24 +94,38 @@ export default function ResearchForm({ onStart }: Props) {
           type="button"
           className="sig-chip"
           onClick={refreshSuggestions}
-          disabled={loading}
+          disabled={loading || fetchingIdeas}
           title="Show different suggestions"
           aria-label="Refresh suggestions"
         >
-          ↻ More ideas
+          {fetchingIdeas ? '↻ Fetching...' : '↻ More ideas'}
         </button>
-        {suggestions.map((q, i) => (
-          <button
-            key={`${i}-${q}`}
-            type="button"
-            className="sig-chip"
-            title={q}
-            disabled={loading}
-            onClick={() => setQuery(q)}
-          >
-            {q}
-          </button>
-        ))}
+        {fetchingIdeas
+          ? [0, 80, 160].map((delay, i) => (
+              <div key={i} style={{ animation: `feedIn 0.15s ease-out ${delay}ms both`, opacity: 0 }}>
+                <div style={{
+                  width: '90px',
+                  height: '32px',
+                  background: 'var(--bg-elevated)',
+                  borderRadius: '2px',
+                  animation: 'skeleton-pulse 1.8s ease-in-out infinite',
+                }} />
+              </div>
+            ))
+          : suggestions.map((q, i) => (
+              <button
+                key={`${i}-${q}`}
+                type="button"
+                className="sig-chip"
+                style={{ animation: `feedIn 0.2s ease-out ${i * 120}ms both`, opacity: 0 }}
+                title={q}
+                disabled={loading}
+                onClick={() => setQuery(q)}
+              >
+                {q}
+              </button>
+            ))
+        }
       </div>
 
       {submitError && (

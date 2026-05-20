@@ -481,15 +481,6 @@ textarea { font-family: inherit; }
   vertical-align: text-bottom;
 }
 
-.sig-feed-step-counter {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent-amber);
-  opacity: 0.8;
-}
-
 .sig-feed-row--scrape {
   animation: sourceIn 0.15s ease-out;
 }
