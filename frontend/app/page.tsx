@@ -14,17 +14,6 @@ function fmtStat(n: number): string {
   return n >= 1000 ? n.toLocaleString() : String(n);
 }
 
-function SkeletonCard() {
-  return (
-    <div className="sig-skeleton-card">
-      <div className="sig-skeleton-line" style={{ height: '18px', width: '60%' }} />
-      <div className="sig-skeleton-line" style={{ height: '12px', width: '80%', marginTop: '8px' }} />
-      <div className="sig-skeleton-line" style={{ height: '10px', width: '100%', marginTop: '20px' }} />
-      <div className="sig-skeleton-line" style={{ height: '10px', width: '85%', marginTop: '4px' }} />
-      <div className="sig-skeleton-line" style={{ height: '10px', width: '50%', marginTop: '20px' }} />
-    </div>
-  );
-}
 
 function ReportCard({ item }: { item: GalleryItem }) {
   const badgeClass = CONFIDENCE_CLASS[item.confidence_level ?? ''] ?? CONFIDENCE_CLASS.Medium;
@@ -133,12 +122,18 @@ export default async function LandingPage() {
       {/* Featured Reports */}
       <section className="sig-lp-section">
         <p className="sig-section-stamp">From the Gallery</p>
-        <div className="sig-featured-grid">
-          {featured.length > 0
-            ? featured.map((item) => <ReportCard key={item.job_id} item={item} />)
-            : [0, 1, 2].map((i) => <SkeletonCard key={i} />)
-          }
-        </div>
+        {featured.length > 0 ? (
+          <div className="sig-featured-grid">
+            {featured.map((item) => <ReportCard key={item.job_id} item={item} />)}
+          </div>
+        ) : (
+          <div className="sig-gallery-empty">
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: 'var(--text-tertiary)' }}>◈</span>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-tertiary)' }}>
+              No reports yet — be the first to research something.
+            </p>
+          </div>
+        )}
         <div style={{ marginTop: '24px', textAlign: 'center' }}>
           <Link href="/gallery" className="sig-cta-secondary" style={{ display: 'inline-flex' }}>
             View All Reports →
