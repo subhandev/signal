@@ -17,12 +17,11 @@ export default function Nav({ onNewResearch, showNewResearch, isRunning }: NavPr
       </Link>
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
         <Link href="/gallery" className="sig-nav-link">Gallery</Link>
-        {showNewResearch ? (
+        <Link href="/research" className="sig-nav-link">Research</Link>
+        {showNewResearch && (
           <button onClick={onNewResearch} className="sig-nav-new">
             New Research →
           </button>
-        ) : (
-          <Link href="/history" className="sig-nav-link">History</Link>
         )}
       </div>
     </header>

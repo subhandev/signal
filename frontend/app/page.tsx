@@ -9,8 +9,8 @@ const CONFIDENCE_CLASS: Record<string, string> = {
   Low:    'sig-confidence-badge sig-confidence-low',
 };
 
-function fmtStat(n: number): string {
-  if (n === 0) return '—';
+function fmtStat(n: number | undefined): string {
+  if (n == null || !Number.isFinite(n) || n === 0) return '—';
   return n >= 1000 ? n.toLocaleString() : String(n);
 }
 

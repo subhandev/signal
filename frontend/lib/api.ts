@@ -43,8 +43,35 @@ export async function getGallery(limit = 50): Promise<GalleryItem[]> {
   return res.json();
 }
 
+/** Normalize stats from API — production may still use legacy field names and placeholder values when empty. */
+function normalizeStats(raw: Record<string, unknown>): SiteStats {
+  const num = (v: unknown, fallback = 0) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const reports_run = num(raw.reports_run ?? raw.total_reports);
+
+  // Legacy API returns avg_searches: 3 and success_rate: 98 even with zero jobs.
+  if (reports_run === 0) {
+    return {
+      reports_run: 0,
+      sources_read: 0,
+      avg_searches_per_report: 0,
+      success_rate: 0,
+    };
+  }
+
+  return {
+    reports_run,
+    sources_read: num(raw.sources_read),
+    avg_searches_per_report: num(raw.avg_searches_per_report ?? raw.avg_searches),
+    success_rate: num(raw.success_rate),
+  };
+}
+
 export async function getStats(): Promise<SiteStats> {
   const res = await apiFetch(`${API_BASE}/api/stats`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch stats');
-  return res.json();
+  const raw = (await res.json()) as Record<string, unknown>;
+  return normalizeStats(raw);
 }
