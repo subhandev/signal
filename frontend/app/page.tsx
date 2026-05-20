@@ -10,7 +10,8 @@ const CONFIDENCE_CLASS: Record<string, string> = {
 };
 
 function fmtStat(n: number | undefined): string {
-  if (n == null || !Number.isFinite(n) || n === 0) return '—';
+  if (n == null || !Number.isFinite(n)) return '—';
+  if (n === 0) return '0';
   return n >= 1000 ? n.toLocaleString() : String(n);
 }
 

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     AGENT_MAX_SCRAPES_STANDARD: int = 4
     AGENT_MAX_SCRAPES_DEEP: int = 8
 
+    RESEARCH_TIMEOUT_QUICK: int = 90
+    RESEARCH_TIMEOUT_STANDARD: int = 180
+    RESEARCH_TIMEOUT_DEEP: int = 360
+
     ALLOWED_ORIGINS: str = "*"
 
     class Config:

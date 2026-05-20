@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from app.database import get_db
 from app.models.research import ResearchJob, ResearchStatus
 from app.schemas.research import ResearchRequest, ResearchJobResponse, GalleryItem
-from app.agent.executor import run_research_agent
+from app.agent.job_runner import ensure_research_started, stream_job_events
 
 router = APIRouter(prefix="/api/research", tags=["research"])
 limiter = Limiter(key_func=get_remote_address)
@@ -24,6 +24,8 @@ async def start_research(request: Request, body: ResearchRequest, db: AsyncSessi
     db.add(job)
     await db.commit()
     await db.refresh(job)
+
+    await ensure_research_started(job_id)
 
     return ResearchJobResponse(
         job_id=job.id,
@@ -43,8 +45,10 @@ async def stream_research(request: Request, job_id: str, db: AsyncSession = Depe
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
+    await ensure_research_started(job_id)
+
     async def generate():
-        async for event in run_research_agent(job, db):
+        async for event in stream_job_events(job_id, db):
             yield event
 
     return StreamingResponse(

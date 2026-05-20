@@ -19,6 +19,15 @@ export function apiUrl(path: string): string {
   return base ? `${base}${p}` : p;
 }
 
+/** SSE must hit the backend directly — Next.js rewrites buffer or cut long streams. */
+export function researchStreamUrl(jobId: string): string {
+  const path = `/api/research/${jobId}/stream`;
+  if (typeof window !== 'undefined') {
+    return `${BACKEND_URL}${path}`;
+  }
+  return apiUrl(path);
+}
+
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(input, init);

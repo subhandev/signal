@@ -104,11 +104,11 @@ async def run_research_agent(
     yield sse("progress", f"Starting {job.mode} research on: {job.query}")
 
     timeouts = {
-        ResearchMode.QUICK:    60,
-        ResearchMode.STANDARD: 120,
-        ResearchMode.DEEP:     240,
+        ResearchMode.QUICK: settings.RESEARCH_TIMEOUT_QUICK,
+        ResearchMode.STANDARD: settings.RESEARCH_TIMEOUT_STANDARD,
+        ResearchMode.DEEP: settings.RESEARCH_TIMEOUT_DEEP,
     }
-    timeout = timeouts.get(job.mode, 120)
+    timeout = timeouts.get(job.mode, settings.RESEARCH_TIMEOUT_STANDARD)
     deadline = asyncio.get_event_loop().time() + timeout
 
     agent_task = asyncio.create_task(_run_agent(executor, job.query))
