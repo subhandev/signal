@@ -90,7 +90,7 @@ export default function GalleryPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className="sig-gallery-mode-row">
             {MODES.map((m) => (
               <button
                 key={m}

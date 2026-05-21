@@ -19,7 +19,7 @@ export default function Nav({ onNewResearch, showNewResearch, isRunning }: NavPr
         <span className={`live-dot${isRunning ? ' running' : ''}`} />
         <span className="nav-wordmark sig-wordmark-text">SIGNAL</span>
       </Link>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+      <div className="sig-nav-actions">
         <Link href="/gallery" className="sig-nav-link">Gallery</Link>
         {!onResearchPage && (
           <Link href="/research" className="sig-nav-link">Research</Link>

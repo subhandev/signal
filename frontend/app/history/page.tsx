@@ -43,7 +43,7 @@ export default async function HistoryPage() {
             No research jobs yet.
           </p>
         ) : (
-          <div>
+          <div className="sig-table-wrap">
             {/* Table header */}
             <div className="sig-table-head">
               <span className="sig-table-head-cell">Query</span>
