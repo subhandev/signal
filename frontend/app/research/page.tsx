@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Nav from '@/components/Nav';
 import ResearchForm from '@/components/ResearchForm';
 import StreamingFeed from '@/components/StreamingFeed';
@@ -11,7 +12,8 @@ import { StreamUpdate, StructuredReport } from '@/types';
 
 type Phase = 'idle' | 'running' | 'complete' | 'error';
 
-export default function ResearchPage() {
+function ResearchPageInner() {
+  const searchParams = useSearchParams();
   const [phase, setPhase] = useState<Phase>('idle');
   const [jobId, setJobId] = useState<string | null>(null);
   const [updates, setUpdates] = useState<StreamUpdate[]>([]);
@@ -19,6 +21,7 @@ export default function ResearchPage() {
   const [error, setError] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<Date | undefined>();
   const cleanupRef = useRef<(() => void) | null>(null);
+  const resumedFromUrl = useRef(false);
 
   const handleStart = (id: string) => {
     setJobId(id);
@@ -28,6 +31,14 @@ export default function ResearchPage() {
     setError(null);
     setStartedAt(new Date());
   };
+
+  useEffect(() => {
+    const resumeId = searchParams.get('job');
+    if (resumeId && !resumedFromUrl.current) {
+      resumedFromUrl.current = true;
+      handleStart(resumeId);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (phase !== 'running' || !jobId) return;
@@ -111,5 +122,13 @@ export default function ResearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ResearchPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResearchPageInner />
+    </Suspense>
   );
 }

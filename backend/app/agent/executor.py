@@ -101,7 +101,8 @@ async def run_research_agent(
     job.status = ResearchStatus.RUNNING
     await db.commit()
 
-    yield sse("progress", f"Starting {job.mode} research on: {job.query}")
+    mode_label = job.mode.value if hasattr(job.mode, "value") else job.mode
+    yield sse("progress", f"Starting {mode_label} research on: {job.query}")
 
     timeouts = {
         ResearchMode.QUICK: settings.RESEARCH_TIMEOUT_QUICK,

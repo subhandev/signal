@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Nav from '@/components/Nav';
-import { apiUrl } from '@/lib/api';
+import { getGallery } from '@/lib/api';
 import { GalleryItem } from '@/types';
 
 const CONFIDENCE_CLASS: Record<string, string> = {
@@ -49,14 +49,21 @@ function SkeletonCard() {
 export default function GalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
 
   useEffect(() => {
-    fetch(apiUrl('/api/gallery?limit=50'), { cache: 'no-store' } as RequestInit)
-      .then((r) => r.json())
-      .then((data) => { setItems(data); setLoading(false); })
-      .catch(() => setLoading(false));
+    getGallery(50)
+      .then((data) => {
+        setItems(Array.isArray(data) ? data : []);
+        setFetchError(null);
+      })
+      .catch((err) => {
+        setFetchError(err instanceof Error ? err.message : 'Failed to load gallery');
+        setItems([]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
@@ -106,9 +113,13 @@ export default function GalleryPage() {
           <div className="sig-gallery-empty">
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '24px', color: 'var(--text-tertiary)' }}>◈</span>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-tertiary)' }}>
-              {items.length === 0 ? 'No reports yet.' : 'No reports match your filters.'}
+              {fetchError
+                ? fetchError
+                : items.length === 0
+                  ? 'No reports yet.'
+                  : 'No reports match your filters.'}
             </p>
-            {items.length === 0 && (
+            {items.length === 0 && !fetchError && (
               <>
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-tertiary)', letterSpacing: '0.05em' }}>
                   Run your first research to populate the gallery.

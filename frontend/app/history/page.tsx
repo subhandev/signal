@@ -57,7 +57,11 @@ export default async function HistoryPage() {
             {jobs.map((job) => (
               <Link
                 key={job.job_id}
-                href={job.status === 'complete' ? `/report/${job.job_id}` : '#'}
+                href={
+                  job.status === 'complete'
+                    ? `/report/${job.job_id}`
+                    : `/research?job=${job.job_id}`
+                }
                 className="sig-table-row-link"
               >
                 <span className="sig-table-cell-query">{job.query}</span>

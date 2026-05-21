@@ -37,7 +37,7 @@ async def start_research(request: Request, body: ResearchRequest, db: AsyncSessi
 
 
 @router.get("/{job_id}/stream")
-@limiter.limit("20/hour")
+@limiter.limit("60/hour")
 async def stream_research(request: Request, job_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ResearchJob).where(ResearchJob.id == job_id))
     job = result.scalar_one_or_none()
