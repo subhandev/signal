@@ -24,9 +24,6 @@ export default function Nav({ onNewResearch, showNewResearch, isRunning }: NavPr
         {!onResearchPage && (
           <Link href="/research" className="sig-nav-link">Research</Link>
         )}
-        {onResearchPage && (
-          <Link href="/history" className="sig-nav-link">History</Link>
-        )}
         {showNewResearch && (
           <button onClick={onNewResearch} className="sig-nav-new">
             New Research →
