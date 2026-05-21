@@ -94,6 +94,15 @@ function ResearchPageInner() {
           <>
             <ExportButtons report={report} jobId={jobId} />
             <ReportViewer report={report} />
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '8px' }}>
+              <button
+                onClick={reset}
+                className="sig-export-btn"
+                style={{ flex: 'none', padding: '0 32px' }}
+              >
+                New Research →
+              </button>
+            </div>
           </>
         )}
 
