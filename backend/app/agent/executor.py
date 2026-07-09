@@ -1,5 +1,6 @@
 import json
 import asyncio
+import logging
 import re
 from datetime import datetime, timezone
 from typing import AsyncGenerator
@@ -17,6 +18,26 @@ from app.tools.search import create_search_tool
 from app.tools.scraper import create_scraper_tool
 from app.tools.summariser import create_summariser_tool
 from app.agent.prompts import SYSTEM_PROMPT, QUICK_ADDENDUM, STANDARD_ADDENDUM, DEEP_ADDENDUM
+
+logger = logging.getLogger(__name__)
+
+
+def _client_safe_error(e: Exception) -> str:
+    """Map an internal exception to a message safe to show end users.
+
+    Provider SDK errors (e.g. OpenAI auth failures) embed the API key —
+    even masked — in their message text, so raw str(e) must never reach
+    the client. Full detail still goes to the server logs.
+    """
+    name = type(e).__name__
+    msg = str(e)
+    if "AuthenticationError" in name or "Incorrect API key" in msg or "invalid_api_key" in msg:
+        return "The research service is temporarily unavailable (upstream authentication issue). Please try again later."
+    if "RateLimitError" in name or "insufficient_quota" in msg or "429" in msg:
+        return "The research service is rate-limited or out of quota right now. Please try again later."
+    if isinstance(e, asyncio.TimeoutError) or "timeout" in msg.lower():
+        return "Research timed out. Try Quick mode for faster results."
+    return "Research failed due to an internal error. Please try again."
 
 
 def sse(type: str, message: str, **kwargs) -> str:
@@ -141,10 +162,12 @@ async def run_research_agent(
         yield sse("complete", "Research complete", report=report.model_dump())
 
     except Exception as e:
+        logger.exception("Research agent failed for job %s", job.id)
+        safe_message = _client_safe_error(e)
         job.status = ResearchStatus.FAILED
-        job.error = str(e)
+        job.error = safe_message
         await db.commit()
-        yield sse("error", f"Research failed: {str(e)}")
+        yield sse("error", f"Research failed: {safe_message}")
 
 
 async def _run_agent(executor: AgentExecutor, query: str) -> str:
